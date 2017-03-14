@@ -80,6 +80,7 @@ add_definitions(-DHAVE_CONFIG_H)
 set(LIB_NAME ${PROJECT_NAME})
 if(BUILD_SHARED_LIBS)
     add_library(${LIB_NAME} SHARED ${SRCS} ${PUBLIC_HDRS})
+    add_definitions(-DYAML_DECLARE_EXPORT)
     set_target_properties (${LIB_NAME} PROPERTIES
         VERSION ${VERSION}
         SOVERSION ${YAML_MAJOR_VERSION})
