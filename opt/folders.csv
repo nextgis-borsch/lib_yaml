@@ -1,0 +1,6 @@
+.,.,,"LICENSE,README,ac"
+config,config,skip,
+doc,doc,skip,
+include,include,,"h"
+src,src,,"c,h"
+tests,tests,,"c"

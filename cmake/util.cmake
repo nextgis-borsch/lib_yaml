@@ -1,9 +1,9 @@
 ################################################################################
-# Project:  Lib jbig
+# Project:  Lib yaml
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, dmitry.baryshnikov@nexgis.com
 ################################################################################
-# Copyright (C) 2015, NextGIS <info@nextgis.com>
+# Copyright (C) 2015-2019, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -29,22 +29,16 @@ function(check_version major minor patch)
     # parse the version number from gdal_version.h and include in
     # major, minor and rev parameters
 
-    set(VERSION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/win32/config.h)
+    set(VERSION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/configure.ac)
 
     file(READ ${VERSION_FILE} VERSION_H_CONTENTS)
 
-    string(REGEX MATCH "YAML_VERSION_MAJOR[ \t]+([0-9]+)"
-        MAJOR_VERSION ${VERSION_H_CONTENTS})
-    string (REGEX MATCH "([0-9]+)"
-        MAJOR_VERSION ${MAJOR_VERSION})
-    string(REGEX MATCH "YAML_VERSION_MINOR[ \t]+([0-9]+)"
-        MINOR_VERSION ${VERSION_H_CONTENTS})
-    string (REGEX MATCH "([0-9]+)"
-        MINOR_VERSION ${MINOR_VERSION})
-    string(REGEX MATCH "YAML_VERSION_PATCH[ \t]+([0-9]+)"
-        PATCH_VERSION ${VERSION_H_CONTENTS})
-    string (REGEX MATCH "([0-9]+)"
-        PATCH_VERSION ${PATCH_VERSION})
+    string(REGEX MATCH "(.+).YAML_MAJOR.[, \t]+([0-9]+)" MAJOR_VERSION ${VERSION_H_CONTENTS})
+    set(MAJOR_VERSION ${CMAKE_MATCH_2})
+    string(REGEX MATCH "(.+).YAML_MINOR.[, \t]+([0-9]+)" MINOR_VERSION ${VERSION_H_CONTENTS})
+    set(MINOR_VERSION ${CMAKE_MATCH_2})
+    string(REGEX MATCH "(.+).YAML_PATCH.[, \t]+([0-9]+)" PATCH_VERSION ${VERSION_H_CONTENTS})
+    set(PATCH_VERSION ${CMAKE_MATCH_2})
 
     set(${major} ${MAJOR_VERSION} PARENT_SCOPE)
     set(${minor} ${MINOR_VERSION} PARENT_SCOPE)
@@ -70,13 +64,65 @@ function(report_version name ver)
 
 endfunction()
 
+
+# macro to find packages on the host OS
+macro( find_exthost_package )
+    if(CMAKE_CROSSCOMPILING)
+        set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER )
+        set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER )
+        set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER )
+
+        find_package( ${ARGN} )
+
+        set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY )
+        set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
+        set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY )
+    else()
+        find_package( ${ARGN} )
+    endif()
+endmacro()
+
+
+# macro to find programs on the host OS
+macro( find_exthost_program )
+    if(CMAKE_CROSSCOMPILING)
+        set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER )
+        set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER )
+        set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER )
+
+        find_program( ${ARGN} )
+
+        set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY )
+        set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
+        set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY )
+    else()
+        find_program( ${ARGN} )
+    endif()
+endmacro()
+
+function(get_prefix prefix IS_STATIC)
+  if(IS_STATIC)
+    set(STATIC_PREFIX "static-")
+      if(ANDROID)
+        set(STATIC_PREFIX "${STATIC_PREFIX}android-${ANDROID_ABI}-")
+      elseif(IOS)
+        set(STATIC_PREFIX "${STATIC_PREFIX}ios-${IOS_ARCH}-")
+      endif()
+    endif()
+  set(${prefix} ${STATIC_PREFIX} PARENT_SCOPE)
+endfunction()
+
+
 function(get_cpack_filename ver name)
     get_compiler_version(COMPILER)
-    if(BUILD_STATIC_LIBS)
-        set(STATIC_PREFIX "static-")
+    
+    if(NOT DEFINED BUILD_STATIC_LIBS)
+      set(BUILD_STATIC_LIBS OFF)
     endif()
 
-    set(${name} ${PROJECT_NAME}-${STATIC_PREFIX}${ver}-${COMPILER} PARENT_SCOPE)
+    get_prefix(STATIC_PREFIX ${BUILD_STATIC_LIBS})
+
+    set(${name} ${PACKAGE_NAME}-${ver}-${STATIC_PREFIX}${COMPILER} PARENT_SCOPE)
 endfunction()
 
 function(get_compiler_version ver)
