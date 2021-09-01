@@ -1,6 +1,5 @@
-.,.,,"LICENSE,README,ac"
-config,config,skip,
+.,.,,"License,README,ac"
 doc,doc,skip,
-include,include,,"h"
+include,include,,h
 src,src,,"c,h"
-tests,tests,,"c"
+tests,tests,,c
