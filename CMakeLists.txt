@@ -1,11 +1,18 @@
 
-cmake_minimum_required(VERSION 3.0)
-project (yaml C)
+cmake_minimum_required(VERSION 3.16.3)
+project (yaml 
+  LANGUAGES C
+  VERSION 0.2.5
+)
 
 set (YAML_VERSION_MAJOR 0)
 set (YAML_VERSION_MINOR 2)
 set (YAML_VERSION_PATCH 5)
 set (YAML_VERSION_STRING "${YAML_VERSION_MAJOR}.${YAML_VERSION_MINOR}.${YAML_VERSION_PATCH}")
+
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/borsch/cmake/version.cmake)
+report_version(spatialindex ${YAML_VERSION_STRING})
+write_version(${CMAKE_CURRENT_SOURCE_DIR}/Changes ${YAML_VERSION_MAJOR} ${YAML_VERSION_MINOR} ${YAML_VERSION_PATCH})
 
 option(BUILD_SHARED_LIBS "Build libyaml as a shared library" OFF)
 set(YAML_STATIC_LIB_NAME "yaml" CACHE STRING "Base name of static library output")
@@ -79,23 +86,6 @@ target_include_directories(yaml PUBLIC
   )
 
 #
-# Install rules
-#
-install(
-  FILES
-    include/yaml.h
-  DESTINATION include COMPONENT Development
-  )
-
-install(
-  TARGETS yaml
-  EXPORT yamlTargets
-  RUNTIME DESTINATION "${INSTALL_BIN_DIR}" COMPONENT Runtime
-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}" COMPONENT Development
-  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}" COMPONENT Development
-  )
-
-#
 # Add tests
 #
 include(CTest) # This module defines BUILD_TESTING option
@@ -103,58 +93,12 @@ if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
 
-#
-# Generate 'yamlConfig.cmake', 'yamlConfigVersion.cmake' and 'yamlTargets.cmake'
-#
-include(CMakePackageConfigHelpers)
 
-# Configure 'yamlConfig.cmake' for a build tree
-set(CONFIG_DIR_CONFIG ${PROJECT_BINARY_DIR})
-set(config_file ${PROJECT_BINARY_DIR}/yamlConfig.cmake)
-configure_package_config_file(
-  yamlConfig.cmake.in
-  ${config_file}
-  INSTALL_DESTINATION ${PROJECT_BINARY_DIR}
-  PATH_VARS CONFIG_DIR_CONFIG
-  NO_CHECK_REQUIRED_COMPONENTS_MACRO
-  )
-
-# Configure 'yamlTargets.cmake' for a build tree
-export(TARGETS yaml
-  FILE ${PROJECT_BINARY_DIR}/yamlTargets.cmake
-  )
-
-# Configure and install 'yamlConfig.cmake' for an install tree
-set(CONFIG_DIR_CONFIG ${INSTALL_CMAKE_DIR})
-set(install_config_file ${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/yamlConfig.cmake )
-configure_package_config_file(
-  yamlConfig.cmake.in
-  ${install_config_file}
-  INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}
-  PATH_VARS CONFIG_DIR_CONFIG
-  NO_CHECK_REQUIRED_COMPONENTS_MACRO
-  )
-install(
-  FILES ${install_config_file}
-  DESTINATION ${INSTALL_CMAKE_DIR} COMPONENT Development
-  )
-
-# Configure and install 'yamlTargets.cmake' for an install tree
-install(EXPORT yamlTargets
-  FILE yamlTargets.cmake
-  DESTINATION ${INSTALL_CMAKE_DIR}
-  COMPONENT Development
-  )
-
-# Configure 'yamlConfigVersion.cmake' for a build tree
-set(config_version_file ${PROJECT_BINARY_DIR}/yamlConfigVersion.cmake)
-write_basic_package_version_file(
-    ${config_version_file}
-    VERSION ${YAML_VERSION_STRING}
-    COMPATIBILITY AnyNewerVersion
+# Installing and packaging ====================================================
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/borsch/cmake/packaging.cmake)
+create_borsch_package(${PROJECT_NAME}
+  VENDOR NextGIS
+  VERSION ${YAML_VERSION_STRING}
+  TARGETS yaml
+  HEADERS ${CMAKE_CURRENT_LIST_DIR}/include/yaml.h
 )
-# ... and install for an install tree
-install(
-  FILES ${config_version_file}
-  DESTINATION ${INSTALL_CMAKE_DIR} COMPONENT Development
-  )
